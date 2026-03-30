@@ -1,104 +1,265 @@
 use anchor_lang::prelude::*;
 
-// NOTE: Program ID will be updated after we grind a vanity key ending with "Liq".
+// NOTE: Replace this with the real vanity program id that ends with "Liq" once generated.
 declare_id!("11111111111111111111111111111111");
 
 #[program]
 pub mod liq_program {
     use super::*;
 
-    /// Initialize a new LIQ launch.
-    ///
-    /// This is a skeleton matching the LIQ V1 spec. It will be expanded with:
-    /// - tier validation (Tier 1/2/3 ranges)
-    /// - seed SOL handling
-    /// - trading tax mode selection
-    /// - bonding curve/pool wiring
-    pub fn init_launch(_ctx: Context<InitLaunch>, _params: InitLaunchParams) -> Result<()> {
-        // TODO: implement according to LIQ spec
+    /// One-time or rare global configuration setup.
+    pub fn init_global_config(_ctx: Context<InitGlobalConfig>, _args: InitGlobalConfigArgs) -> Result<()> {
+        // TODO: implement admin-only config init
         Ok(())
     }
 
-    /// Buy developer allocation up to 5% (50M tokens) capped at contract level.
-    pub fn buy_dev_allocation(_ctx: Context<BuyDevAllocation>, _amount: u64) -> Result<()> {
-        // TODO: enforce 5% cap per wallet and perform swap on curve
+    /// Initialize a new LiQ launch: token mint, vaults, and dev SOL lock.
+    pub fn init_launch(_ctx: Context<InitLaunch>, _args: InitLaunchArgs) -> Result<()> {
+        // TODO: implement per spec
         Ok(())
     }
 
-    /// Perform a scheduled recoup at an unlock point (e.g., day 2/5/10).
-    pub fn recoup_unlock(_ctx: Context<RecoupUnlock>) -> Result<()> {
-        // TODO: fetch Pyth price, compute required tokens to recoup, sell, and update state
+    /// Optionally switch between CreatorRewards and TraderCashback before migration.
+    pub fn configure_tax_mode(_ctx: Context<ConfigureTaxMode>, _new_mode: TaxMode) -> Result<()> {
+        // TODO: implement guard rails + mode switch
         Ok(())
     }
 
-    /// Burn remaining locked tokens after recoup is complete.
-    pub fn burn_remaining(_ctx: Context<BurnRemaining>) -> Result<()> {
-        // TODO: burn tokens according to spec, mark burn_done
+    /// Buy tokens from the bonding curve.
+    pub fn buy_from_curve(_ctx: Context<Trade>, _max_sol_in: u64, _min_tokens_out: u64) -> Result<()> {
+        // TODO: implement bonding-curve buy logic + 1% tax
+        Ok(())
+    }
+
+    /// Sell tokens back to the bonding curve.
+    pub fn sell_to_curve(_ctx: Context<Trade>, _max_tokens_in: u64, _min_sol_out: u64) -> Result<()> {
+        // TODO: implement bonding-curve sell logic + 1% tax
+        Ok(())
+    }
+
+    /// Creator claims vested dev SOL according to tier schedule.
+    pub fn claim_dev_sol(_ctx: Context<ClaimDevSol>) -> Result<()> {
+        // TODO: implement vesting math per tier
+        Ok(())
+    }
+
+    /// Migrate a successful launch to PumpSwap at ~$69k FDV and charge migration fee.
+    pub fn migrate_to_pumpswap(_ctx: Context<MigrateToPumpSwap>) -> Result<()> {
+        // TODO: integrate Pyth, check FDV threshold, move liquidity, mark migrated
         Ok(())
     }
 }
 
-/// Parameters for initializing a LIQ launch, derived from the LIQ V1 spec.
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
-pub struct InitLaunchParams {
-    /// Human-readable name (e.g., "LIQ Protocol").
-    pub name: String,
-    /// Token symbol (e.g., "LIQ").
-    pub symbol: String,
-    /// Tier: 1 (Basic), 2 (Committed), 3 (Premium).
-    pub tier: u8,
-    /// Trading tax mode chosen at launch.
-    pub tax_mode: u8,
+/// Tax mode selected at launch; immutable after migration.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+pub enum TaxMode {
+    CreatorRewards,
+    TraderCashback,
 }
 
-/// Skeleton account for a LIQ launch.
+/// Commitment tier.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+pub enum Tier {
+    Basic,
+    Committed,
+    Premium,
+}
+
+/// Global per-tier configuration.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Default)]
+pub struct TierConfig {
+    /// Required dev SOL lock for this tier (lamports).
+    pub required_lock_lamports: u64,
+    /// Total lock duration (slots or seconds; choose and be consistent).
+    pub lock_duration: u64,
+    /// When recoup starts, relative to launch (slots or seconds).
+    pub recoup_start: u64,
+    /// Recoup duration (for linear schedules; can be 0 for cliff).
+    pub recoup_duration: u64,
+}
+
+/// Global configuration, set by LiQ admin.
+#[account]
+pub struct GlobalConfig {
+    pub admin: Pubkey,
+    pub liq_treasury: Pubkey,
+    pub pyth_price_feed: Pubkey,
+    pub pumpswap_program: Pubkey,
+    pub migration_fee_lamports: u64,
+    pub tier_basic: TierConfig,
+    pub tier_committed: TierConfig,
+    pub tier_premium: TierConfig,
+}
+
+/// Per-launch bonding-curve parameters.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Default)]
+pub struct CurveParams {
+    pub a_numerator: u64,
+    pub a_denominator: u64,
+    pub b_numerator: u64,
+    pub b_denominator: u64,
+}
+
+/// Per-launch state account.
 #[account]
 pub struct Launch {
-    pub deployer: Pubkey,
-    pub tier: u8,
-    pub tax_mode: u8,
-    pub seed_sol_lamports: u64,
-    pub lock_start_ts: i64,
-    pub lock_end_ts: i64,
-    pub recouped_sol_lamports: u64,
-    pub remaining_locked_tokens: u64,
-    pub recoup_flags: u8, // bitflags for tier-specific unlocks (e.g., 50%/100%)
+    pub creator: Pubkey,
+    pub token_mint: Pubkey,
+    pub token_decimals: u8,
+    pub launch_tier: Tier,
+
+    // Dev SOL lock
+    pub dev_sol_vault: Pubkey,
+    pub dev_sol_lock_start: u64,
+    pub dev_sol_locked_lamports: u64,
+    pub dev_sol_claimed_lamports: u64,
+
+    // Tax
+    pub tax_mode: TaxMode,
+    pub tax_bps: u16,
+    pub reserved: u16, // padding
+    pub creator_tax_sol: u64,
+    pub protocol_tax_sol: u64,
+
+    // Curve state
+    pub curve_params: CurveParams,
+    pub total_tokens_sold: u64,
+    pub total_sol_raised: u64,
+
+    // Migration
+    pub migrated: bool,
+    pub pumpswap_pool: Pubkey,
+}
+
+/// Args for init_global_config.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct InitGlobalConfigArgs {
+    pub liq_treasury: Pubkey,
+    pub pyth_price_feed: Pubkey,
+    pub pumpswap_program: Pubkey,
+    pub migration_fee_lamports: u64,
+    pub tier_basic: TierConfig,
+    pub tier_committed: TierConfig,
+    pub tier_premium: TierConfig,
+}
+
+/// Args for init_launch.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct InitLaunchArgs {
+    pub tier: Tier,
+    pub tax_mode: TaxMode,
+    pub token_decimals: u8,
+    pub curve_params: CurveParams,
+}
+
+// -----------------
+// Account Contexts
+// -----------------
+
+#[derive(Accounts)]
+pub struct InitGlobalConfig<'info> {
+    #[account(mut)]
+    pub admin: Signer<'info>,
+    #[account(
+        init,
+        payer = admin,
+        space = 8 + std::mem::size_of::<GlobalConfig>(),
+        seeds = [b"liq_global"],
+        bump
+    )]
+    pub global_config: Account<'info, GlobalConfig>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct InitLaunch<'info> {
     #[account(mut)]
-    pub deployer: Signer<'info>,
-    /// New launch account for this token.
+    pub creator: Signer<'info>,
+    #[account(mut)]
+    pub global_config: Account<'info, GlobalConfig>,
+    /// New launch account.
     #[account(
         init,
-        payer = deployer,
-        space = 8 + std::mem::size_of::<Launch>()
+        payer = creator,
+        space = 8 + std::mem::size_of::<Launch>(),
+        seeds = [b"liq_launch", token_mint.key().as_ref()],
+        bump
     )]
     pub launch: Account<'info, Launch>,
-    /// System program.
+    /// SPL mint for this launch (created before or during this ix).
+    #[account(mut)]
+    pub token_mint: Account<'info, anchor_spl::token::Mint>,
+    /// Token vault holding unsold tokens.
+    #[account(mut)]
+    pub launch_token_vault: Account<'info, anchor_spl::token::TokenAccount>,
+    /// SOL pool used for bonding-curve liquidity.
+    /// CHECK: this is a system-owned account (PDA) that holds SOL.
+    #[account(mut)]
+    pub launch_sol_vault: UncheckedAccount<'info>,
+    /// Dev SOL lock vault (PDA).
+    /// CHECK: this is a system-owned account (PDA) that holds SOL.
+    #[account(mut)]
+    pub dev_sol_vault: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, anchor_spl::token::Token>,
+    pub rent: Sysvar<'info, Rent>,
+}
+
+#[derive(Accounts)]
+pub struct ConfigureTaxMode<'info> {
+    #[account(mut)]
+    pub creator: Signer<'info>,
+    #[account(mut, has_one = creator)]
+    pub launch: Account<'info, Launch>,
+}
+
+#[derive(Accounts)]
+pub struct Trade<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+    #[account(mut)]
+    pub user_token_ata: Account<'info, anchor_spl::token::TokenAccount>,
+    #[account(mut)]
+    pub launch: Account<'info, Launch>,
+    #[account(mut)]
+    pub launch_token_vault: Account<'info, anchor_spl::token::TokenAccount>,
+    /// CHECK: SOL pool PDA
+    #[account(mut)]
+    pub launch_sol_vault: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, anchor_spl::token::Token>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimDevSol<'info> {
+    #[account(mut)]
+    pub creator: Signer<'info>,
+    #[account(mut, has_one = creator)]
+    pub launch: Account<'info, Launch>,
+    /// CHECK: SOL vault PDA holding locked dev funds
+    #[account(mut)]
+    pub dev_sol_vault: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
-pub struct BuyDevAllocation<'info> {
+pub struct MigrateToPumpSwap<'info> {
     #[account(mut)]
-    pub dev: Signer<'info>,
+    pub caller: Signer<'info>,
     #[account(mut)]
-    pub launch: Account<'info, Launch>,
-    // TODO: add pool + token accounts once curve integration is defined
-}
-
-#[derive(Accounts)]
-pub struct RecoupUnlock<'info> {
+    pub global_config: Account<'info, GlobalConfig>,
     #[account(mut)]
     pub launch: Account<'info, Launch>,
-    // TODO: add oracle + pool + authority accounts
-}
-
-#[derive(Accounts)]
-pub struct BurnRemaining<'info> {
+    /// CHECK: SOL vault PDA holding curve liquidity
     #[account(mut)]
-    pub launch: Account<'info, Launch>,
-    // TODO: add token mint + burn destination
+    pub launch_sol_vault: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub launch_token_vault: Account<'info, anchor_spl::token::TokenAccount>,
+    /// CHECK: destination PumpSwap pool account (created by external program)
+    #[account(mut)]
+    pub pumpswap_pool: UncheckedAccount<'info>,
+    /// CHECK: Pyth price feed account
+    pub pyth_price_feed: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, anchor_spl::token::Token>,
 }

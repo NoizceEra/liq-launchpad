@@ -1,77 +1,90 @@
 export function Hero() {
   return (
-    <section className="border-b border-cardBorder/60 bg-gradient-to-r from-sky-500/10 via-transparent to-violet-500/10">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-12 lg:flex-row lg:items-center lg:py-20">
+    <section className="border-b border-cardBorder/60 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-fuchsia-900/40 via-background to-background relative overflow-hidden">
+      {/* Decorative background glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/20 blur-[120px] rounded-[100%] pointer-events-none" />
+      
+      <div className="mx-auto flex max-w-5xl flex-col gap-10 px-4 py-20 lg:flex-row lg:items-center relative z-10">
         <div className="flex-1 space-y-6">
-          <span className="inline-flex items-center rounded-full border border-accent/40 bg-black/60 px-3 py-1 text-xs font-medium text-accent shadow-glow">
-            Liquidity tiers • Creator rewards on every launch
+          <span className="inline-flex items-center rounded-full border border-pink-400/30 bg-pink-500/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-pink-400 uppercase backdrop-blur-md">
+            🍬 The Candy Store
           </span>
-          <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
-            LIQ — liquidity-locked launches
-            <span className="block text-accent">with visible floors and creator rewards.</span>
+          <h1 className="text-balance text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-foreground drop-shadow-sm">
+            Launch a candy.<br/>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-purple-400 drop-shadow-sm">
+              Let LIQ run the jar.
+            </span>
           </h1>
-          <p className="max-w-xl text-sm text-muted sm:text-base">
-            LIQ turns degen chaos into structured launches. Devs lock their own
-            liquidity into tiers, set a stablecoin-backed floor, and a small
-            creator tax on exits funds ongoing rewards and ecosystem growth.
+          <p className="max-w-md text-base text-muted/90 sm:text-lg leading-relaxed">
+            Pick a tier, lock your liquidity, and let LIQ handle the scheduled recoup and burn. Serious on-chain mechanics, wrapped in a sweet candy shell.
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-4 pt-2">
             <a
               href="#create-launch"
-              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-black shadow-glow hover:bg-sky-400"
+              className="group relative rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-8 py-3.5 text-sm font-bold text-white shadow-glow hover:shadow-[0_0_60px_rgba(244,114,182,0.5)] transition-all duration-300 hover:-translate-y-0.5"
             >
               Hit a LIQ
+              <span className="absolute inset-0 rounded-full border border-white/20"></span>
             </a>
             <a
-              href="#launches"
-              className="rounded-md border border-cardBorder bg-black/60 px-4 py-2 text-sm font-medium text-foreground hover:border-accent/60 hover:bg-accent/5"
+              href="#how-it-works"
+              className="rounded-full border border-white/10 bg-white/5 backdrop-blur-md px-8 py-3.5 text-sm font-semibold text-foreground hover:bg-white/10 transition-colors duration-300"
             >
-              Browse liquidity tiers
+              How it works
             </a>
           </div>
-          <div className="flex flex-wrap gap-6 pt-2 text-xs text-muted">
-            <div>
-              <div className="font-semibold text-foreground">Tiered, locked LP</div>
-              <div>Dev liquidity is locked in visible tiers with clear floors.</div>
+          <div className="flex flex-wrap gap-8 pt-6 text-sm text-muted/80">
+            <div className="flex items-start gap-2">
+              <span className="text-xl">🫙</span>
+              <div>
+                <div className="font-semibold text-foreground">Locked gracefully</div>
+                <div className="text-xs mt-0.5">Visibly locked until recoup.</div>
+              </div>
             </div>
-            <div>
-              <div className="font-semibold text-foreground">Creator tax + rewards</div>
-              <div>A small tax on dev exits funds creator income and reputational pools.</div>
+            <div className="flex items-start gap-2">
+              <span className="text-xl">🔥</span>
+              <div>
+                <div className="font-semibold text-foreground">Performance burns</div>
+                <div className="text-xs mt-0.5">Schedules you can trust.</div>
+              </div>
             </div>
           </div>
         </div>
-        <div className="flex-1">
-          <div className="rounded-2xl border border-cardBorder bg-black/60 p-4 shadow-glow">
-            <div className="mb-3 flex items-center justify-between text-xs text-muted">
-              <span>Live launch snapshot</span>
-              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-400">
-                Protocol view
+        
+        <div className="flex-1 lg:pl-10">
+          <div className="relative rounded-[2rem] border border-white/10 bg-card/60 p-6 shadow-glow backdrop-blur-xl transition-transform duration-500 hover:-translate-y-2 group">
+            <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+            
+            <div className="mb-6 flex items-center justify-between text-xs font-semibold tracking-wider text-muted uppercase">
+              <span className="flex items-center gap-1.5"><span className="text-base">🍓</span> Example Launch</span>
+              <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] text-emerald-400 border border-emerald-500/20">
+                Live Preview
               </span>
             </div>
-            <div className="space-y-3 text-xs">
-              <div className="flex justify-between">
-                <span className="text-muted">Token</span>
-                <span className="font-medium text-foreground">LIQ / SOL</span>
+            
+            <div className="space-y-4 text-sm relative z-10">
+              <div className="flex justify-between items-center rounded-xl bg-white/5 p-3">
+                <span className="text-muted font-medium">Candy</span>
+                <span className="font-bold text-foreground">LIQ / SOL</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted">Lock tier</span>
-                <span className="font-medium text-foreground">Tier 2 • 14 days</span>
+              <div className="flex justify-between items-center rounded-xl bg-white/5 p-3">
+                <span className="text-muted font-medium">Jar tier</span>
+                <span className="font-bold text-accent">Tier 2 (Candy Jar)</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted">Current multiple</span>
-                <span className="font-mono text-accent">27.4×</span>
+              <div className="flex justify-between items-center rounded-xl bg-white/5 p-3">
+                <span className="text-muted font-medium">Locked dev SOL</span>
+                <span className="font-mono font-bold text-purple-400">8.0 ◎</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted">Alignment score</span>
-                <span className="font-mono text-emerald-400">92 / 100</span>
+              <div className="flex justify-between items-center rounded-xl bg-white/5 p-3">
+                <span className="text-muted font-medium">Next recoup</span>
+                <span className="font-mono font-bold text-emerald-400">in 5 days</span>
               </div>
-              <div className="mt-2 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
-              <p className="text-[11px] text-muted">
-                On major catalyst events (like a 100× move), dev exits are
-                capped, a creator tax is applied, and part of the upside can be
-                routed to long-term holders and creator pools. This interface
-                is ready to connect directly to the LIQ program.
-              </p>
+              
+              <div className="mt-6 pt-4 border-t border-white/10">
+                <p className="text-[12px] text-muted/80 leading-relaxed italic text-center">
+                  "LIQ tracks your lock, recoup, and burn schedule so traders see exactly how committed you are."
+                </p>
+              </div>
             </div>
           </div>
         </div>

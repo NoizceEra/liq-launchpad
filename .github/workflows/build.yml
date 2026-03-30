@@ -1,0 +1,37 @@
+name: Build Solana Program
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache Solana
+        uses: actions/cache@v3
+        with:
+          path: ~/.local/share/solana
+          key: ${{ runner.os }}-solana-1.18.26
+      - name: Install Solana CLI
+        run: |
+          if [ ! -f "$HOME/.local/share/solana/install/active_release/bin/solana" ]; then
+            sh -c "$(curl -sSfL https://release.solana.com/v1.18.26/install)"
+          fi
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build Program
+        working-directory: program
+        run: cargo build-sbf
+      - name: Output Artifact Size and Rent
+        working-directory: program
+        run: |
+          ls -la target/deploy
+          SIZE=$(stat -c%s target/deploy/liq_program.so)
+          echo "---RESULTS---"
+          echo "EXACT_SIZE=$SIZE"
+          echo "Rent for program (x1):"
+          solana rent $SIZE
+          echo "Rent for program + buffer (x2):"
+          solana rent $((SIZE * 2))
+          echo "---END RESULTS---"
