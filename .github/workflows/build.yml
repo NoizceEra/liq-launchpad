@@ -1,44 +1,68 @@
-name: Build Solana Program
+name: Build and Deploy LIQ Program
 
-on: [push, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Cache Solana
-        uses: actions/cache@v3
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
         with:
-          path: ~/.local/share/solana
-          key: ${{ runner.os }}-solana-1.18.26
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
       - name: Install Solana CLI
         run: |
-          wget https://github.com/solana-labs/solana/releases/download/v1.18.26/solana-release-x86_64-unknown-linux-gnu.tar.bz2
-          tar jxf solana-release-x86_64-unknown-linux-gnu.tar.bz2
-          BIN_PATH=$(find $PWD -name solana-keygen | xargs dirname)
-          echo "$BIN_PATH" >> $GITHUB_PATH
-          export PATH="$BIN_PATH:$PATH"
-          solana --version
-      - name: Setup Rust
+          sh -c "$(curl -sSfL https://release.solana.com/v1.18.26/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Setup Rust (stable, for build toolchain)
         uses: dtolnay/rust-toolchain@stable
+
       - name: Build Program
         working-directory: program
         run: cargo build-sbf
+
+      - name: Get binary size and rent estimate
+        working-directory: program
+        run: |
+          ls -lh target/deploy/liq_program.so
+          SIZE=$(stat -c%s target/deploy/liq_program.so)
+          echo "---RESULTS---"
+          echo "EXACT_SIZE=$SIZE bytes"
+          solana rent $SIZE --url devnet
+          echo "---END RESULTS---"
+
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: liq_program_build
           path: program/target/deploy/liq_program.so
-      - name: Output Artifact Size and Rent
-        working-directory: program
+
+      - name: Write deployer keypair
         run: |
-          ls -la target/deploy
-          SIZE=$(stat -c%s target/deploy/liq_program.so)
-          echo "---RESULTS---"
-          echo "EXACT_SIZE=$SIZE"
-          echo "Rent for program (x1):"
-          solana rent $SIZE
-          echo "Rent for program + buffer (x2):"
-          solana rent $((SIZE * 2))
-          echo "---END RESULTS---"
+          mkdir -p ~/.config/solana
+          echo '${{ secrets.DEPLOYER_KEYPAIR }}' > ~/.config/solana/deployer.json
+          solana address --keypair ~/.config/solana/deployer.json
+
+      - name: Check deployer balance
+        run: |
+          BAL=$(solana balance --keypair ~/.config/solana/deployer.json --url devnet)
+          echo "Deployer balance: $BAL"
+
+      - name: Deploy to Devnet
+        run: |
+          solana program deploy \
+            program/target/deploy/liq_program.so \
+            --url devnet \
+            --keypair ~/.config/solana/deployer.json \
+            --commitment confirmed
