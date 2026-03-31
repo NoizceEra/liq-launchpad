@@ -1,12 +1,34 @@
-"use client";
+import { AnchorProvider, Program, Idl } from '@coral-xyz/anchor';
+import { Connection, PublicKey } from '@solana/web3.js';
+import { IDL } from './liq_idl';
 
-// Placeholder hook for LIQ Anchor client wiring.
-// The real implementation will import the generated IDL and construct
-// an Anchor Program instance once the on-chain program is deployed.
+export const PROGRAM_ID = new PublicKey('9MHn1sAn5PRVkwswocF4VctSjEz3nrE8vG1ReDTj27Xv');
 
-export function useLiqProgram() {
-  return {
-    program: null as any,
-    provider: null as any,
-  };
+export function getLiqProgram(connection: Connection, wallet: any) {
+  const provider = new AnchorProvider(connection, wallet, {
+    commitment: 'confirmed',
+  });
+
+  return new Program(IDL as Idl, provider);
 }
+
+export const getLaunchAddress = (mint: PublicKey) => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from('liq_launch'), mint.toBuffer()],
+    PROGRAM_ID
+  )[0];
+};
+
+export const getSolVaultAddress = (mint: PublicKey) => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from('liq_sol_pool'), mint.toBuffer()],
+    PROGRAM_ID
+  )[0];
+};
+
+export const getGlobalConfigAddress = () => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from('liq_global')],
+    PROGRAM_ID
+  )[0];
+};

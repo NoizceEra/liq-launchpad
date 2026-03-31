@@ -16,12 +16,19 @@ jobs:
         run: |
           wget https://github.com/solana-labs/solana/releases/download/v1.18.26/solana-release-x86_64-unknown-linux-gnu.tar.bz2
           tar jxf solana-release-x86_64-unknown-linux-gnu.tar.bz2
-          echo "$PWD/solana-release/bin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/solana-release/bin" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/solana-release/bin:$PATH"
+          solana --version
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Build Program
         working-directory: program
         run: cargo build-sbf
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: liq_program_build
+          path: program/target/deploy/liq_program.so
       - name: Output Artifact Size and Rent
         working-directory: program
         run: |
