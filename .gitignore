@@ -4,7 +4,18 @@ frontend/.next
 frontend/.vercel
 program/target
 
+# Solana local validator ledger (can be very large)
+test-ledger/
+*.sst
+
 # OS / editor
 .DS_Store
 Thumbs.db
 *.log
+
+# Build / deploy scratch files
+build_errors.txt
+build_log.txt
+build_out*.txt
+push_error.txt
+full_log.txt
