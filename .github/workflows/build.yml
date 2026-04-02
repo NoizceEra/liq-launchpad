@@ -37,10 +37,16 @@ jobs:
       - name: Pin Edition2024-incompatible dependencies
         working-directory: program
         run: |
-          # toml_edit 0.25+ and blake3 1.6+ require Edition 2024 which SBF toolchain doesn't support
-          cargo update -p toml_edit --precise 0.20.7 || echo "toml_edit pin skipped"
+          # The core issue: wit-bindgen 0.51.0 (via solana-program 1.18.26) requires Edition 2024
+          # borsh 1.6.1 pulls proc-macro-crate 3.5.0 which pulls toml_edit 0.25+ (Edition 2024)
+          # Strategy: pin wit-bindgen to last pre-Edition2024 version, and downgrade borsh
           cargo update -p blake3 --precise 1.5.1 || echo "blake3 pin skipped"
-          cargo update -p winnow --precise 0.5.40 || echo "winnow pin skipped"
+          cargo update -p wit-bindgen --precise 0.38.0 || echo "wit-bindgen pin skipped"
+          cargo update -p borsh --precise 1.5.0 || echo "borsh pin skipped"
+          cargo update -p borsh-derive --precise 1.5.0 || echo "borsh-derive pin skipped"
+          # Show what we ended up with
+          cargo tree -p wit-bindgen 2>/dev/null || true
+          cargo tree -p toml_edit 2>/dev/null | tail -5 || true
 
       - name: Build Program
         working-directory: program
