@@ -1,0 +1,25 @@
+﻿
+> liq-launchpad-frontend@0.1.0 dev
+> next dev --port 3000
+
+  Γû▓ Next.js 14.2.5
+  - Local:        http://localhost:3000
+
+ Γ£ô Starting...
+node.exe :  ΓÜá Invalid next.config.mjs options 
+detected: 
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" 
+"C:\Users\vclin_jjufoql\AppData\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( 
+ΓÜá I    nvalid ne...ions detected: :String) [], 
+RemoteE    xception
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ ΓÜá     Unrecognized key(s) in object: 'appDir' 
+at "experimental"
+ ΓÜá See more info here: https://nextjs.org/docs/
+messages/invalid-next-config
+ Γ£ô Ready in 3.7s
