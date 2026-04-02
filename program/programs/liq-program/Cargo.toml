@@ -22,9 +22,6 @@ custom-panic = []
 [dependencies]
 anchor-lang = "0.29.0"
 anchor-spl = { version = "0.29.0", features = ["token"] }
-# Force these version caps to avoid Edition 2024 requirement in cargo-build-sbf
-blake3 = "=1.5.1"
-toml_edit = "=0.20.7"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

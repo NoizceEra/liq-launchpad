@@ -20,7 +20,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Install Solana CLI (Manual Download)
+      - name: Install Solana CLI (v1.18.26)
         run: |
           wget -q https://github.com/solana-labs/solana/releases/download/v1.18.26/solana-release-x86_64-unknown-linux-gnu.tar.bz2
           tar jxf solana-release-x86_64-unknown-linux-gnu.tar.bz2
@@ -31,30 +31,22 @@ jobs:
       - name: Setup Rust (stable)
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install anchor-cli (Manual Install for speed or binary)
+      - name: Pin Problematic Dependencies (Edition 2024 Fix)
+        working-directory: program
         run: |
-          # Sometimes building anchor-cli takes too long, we use the build directly
-          echo "Using cargo to install anchor-cli if needed, but we mostly just need cargo-build-sbf"
+          # Force versions that are compatible with the SBF toolchain (Edition 2021)
+          # These are often Pulled by anchor-lang or other crates
+          cargo update -p toml_edit --precise 0.20.7 || true
+          cargo update -p blake3 --precise 1.5.1 || true
+          # toml_parser is often the root cause
+          cargo update -p toml_parser --precise 1.0.0 || true
+          cargo update -p winnow --precise 0.5.40 || true
 
-      - name: Build Program (Forcing Editions and Path)
+      - name: Build Program
         working-directory: program
         run: |
           export PATH="/home/runner/work/liq-launchpad/liq-launchpad/solana-release/bin:$PATH"
-          # Try to build with a clean state
           cargo build-sbf
-
-      - name: Get binary size
-        working-directory: program
-        run: |
-          ls -lh target/deploy/liq_program.so
-          SIZE=$(stat -c%s target/deploy/liq_program.so)
-          echo "EXACT_SIZE=$SIZE bytes"
-
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: liq_program_build
-          path: program/target/deploy/liq_program.so
 
       - name: Write deployer keypair
         run: |
@@ -62,9 +54,12 @@ jobs:
           echo '${{ secrets.DEPLOYER_KEYPAIR }}' > ~/.config/solana/deployer.json
           solana address --keypair ~/.config/solana/deployer.json
 
+      - name: Check Balance
+        run: |
+          solana balance --keypair ~/.config/solana/deployer.json --url devnet
+
       - name: Deploy to Devnet
         run: |
-          # Use confirmed commitment for reliability
           solana program deploy \
             program/target/deploy/liq_program.so \
             --url devnet \
