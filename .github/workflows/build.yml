@@ -1,4 +1,4 @@
-name: Build and Deploy LIQ Program
+name: V3 Build and Deploy LIQ Program
 
 on:
   push:
