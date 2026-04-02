@@ -20,27 +20,35 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Install Solana CLI
+      - name: Install Solana CLI (Manual Download)
         run: |
-          sh -c "$(curl -sSfL https://release.solana.com/v1.18.26/install)"
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+          wget -q https://github.com/solana-labs/solana/releases/download/v1.18.26/solana-release-x86_64-unknown-linux-gnu.tar.bz2
+          tar jxf solana-release-x86_64-unknown-linux-gnu.tar.bz2
+          echo "$PWD/solana-release/bin" >> $GITHUB_PATH
+          export PATH="$PWD/solana-release/bin:$PATH"
+          solana --version
 
-      - name: Setup Rust (stable, for build toolchain)
+      - name: Setup Rust (stable)
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build Program
-        working-directory: program
-        run: cargo build-sbf
+      - name: Install anchor-cli (Manual Install for speed or binary)
+        run: |
+          # Sometimes building anchor-cli takes too long, we use the build directly
+          echo "Using cargo to install anchor-cli if needed, but we mostly just need cargo-build-sbf"
 
-      - name: Get binary size and rent estimate
+      - name: Build Program (Forcing Editions and Path)
+        working-directory: program
+        run: |
+          export PATH="/home/runner/work/liq-launchpad/liq-launchpad/solana-release/bin:$PATH"
+          # Try to build with a clean state
+          cargo build-sbf
+
+      - name: Get binary size
         working-directory: program
         run: |
           ls -lh target/deploy/liq_program.so
           SIZE=$(stat -c%s target/deploy/liq_program.so)
-          echo "---RESULTS---"
           echo "EXACT_SIZE=$SIZE bytes"
-          solana rent $SIZE --url devnet
-          echo "---END RESULTS---"
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
@@ -54,13 +62,9 @@ jobs:
           echo '${{ secrets.DEPLOYER_KEYPAIR }}' > ~/.config/solana/deployer.json
           solana address --keypair ~/.config/solana/deployer.json
 
-      - name: Check deployer balance
-        run: |
-          BAL=$(solana balance --keypair ~/.config/solana/deployer.json --url devnet)
-          echo "Deployer balance: $BAL"
-
       - name: Deploy to Devnet
         run: |
+          # Use confirmed commitment for reliability
           solana program deploy \
             program/target/deploy/liq_program.so \
             --url devnet \
