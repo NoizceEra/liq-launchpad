@@ -34,14 +34,11 @@ jobs:
           cargo generate-lockfile
           head -5 Cargo.lock
 
-      - name: Pin Edition2024-incompatible dependencies
+      - name: Verify dependencies
         working-directory: program
         run: |
-          # Force pins for known culprits
-          cargo update -p blake3 --precise 1.5.1 || echo "blake3 skip"
-          cargo update -p toml_edit --precise 0.20.7 || echo "toml_edit skip"
-          # Double check what was resolved
-          cargo tree 2>/dev/null | grep -E "wit-bindgen|toml_edit|getrandom" | head -n 10 || true
+          # Check for Edition 2024 leaks
+          cargo tree 2>/dev/null | grep -E "wit-bindgen|toml_edit|getrandom|cpufeatures" | head -n 20 || true
 
       - name: Build Program
         working-directory: program
