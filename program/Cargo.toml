@@ -12,13 +12,3 @@ codegen-units = 1
 opt-level = 3
 incremental = false
 codegen-units = 1
-
-# Force versions that don't require Rust Edition 2024
-# This is needed because solana-program 1.18.26 pulls in:
-# - borsh 1.6.1 -> proc-macro-crate 3.5.0 -> toml_edit 0.25+ (requires edition2024)
-# - getrandom 0.3+ -> wasip2 -> wit-bindgen 0.51+ (requires edition2024)
-[patch.crates-io]
-# borsh 1.x pulls proc-macro-crate 3.x which needs toml_edit 0.25+ (edition2024)
-# We can't remove borsh 1.x but we can provide a patched proc-macro-crate that uses older toml_edit
-# Instead: override getrandom to avoid pulling wasip2/wit-bindgen
-getrandom = { version = "=0.2.17" }

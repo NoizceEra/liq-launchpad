@@ -37,24 +37,11 @@ jobs:
       - name: Pin Edition2024-incompatible dependencies
         working-directory: program
         run: |
-          # Core chain that needs blocking:
-          # solana-program -> cc -> getrandom 0.3 -> wasip2 -> wit-bindgen 0.51 (edition2024)
-          # solana-program -> borsh 1.6.1 -> proc-macro-crate 3.5 -> toml_edit 0.25 (edition2024)
-          
-          # Pin blake3 (direct edition2024 issue)
-          cargo update -p blake3 --precise 1.5.1 || echo "blake3 pin skipped (ok)"
-          
-          # Downgrade getrandom 0.3 -> 0.2 to break the wit-bindgen chain
-          cargo update -p getrandom@0.3.4 --precise 0.2.15 || \
-            cargo update -p getrandom --precise 0.2.15 || \
-            echo "getrandom pin skipped (ok)"
-          
-          # Downgrade borsh 1.6.1 -> 1.5.0 to use proc-macro-crate 1.x instead of 3.x
-          cargo update -p borsh@1.6.1 --precise 1.5.0 || echo "borsh@1 pin skipped (ok)"
-          cargo update -p borsh-derive@1.6.1 --precise 1.5.0 || echo "borsh-derive@1 pin skipped (ok)"
-          
-          # Show result
-          cargo tree 2>/dev/null | grep -E "wit-bindgen|toml_edit|getrandom" | sort -u | head -20 || true
+          # Force pins for known culprits
+          cargo update -p blake3 --precise 1.5.1 || echo "blake3 skip"
+          cargo update -p toml_edit --precise 0.20.7 || echo "toml_edit skip"
+          # Double check what was resolved
+          cargo tree 2>/dev/null | grep -E "wit-bindgen|toml_edit|getrandom" | head -n 10 || true
 
       - name: Build Program
         working-directory: program
