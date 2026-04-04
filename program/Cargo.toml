@@ -12,3 +12,12 @@ codegen-units = 1
 opt-level = 3
 incremental = false
 codegen-units = 1
+
+[patch.crates-io]
+# Force stable Solana crates to prevent pulling Edition 2024 transitives (like getrandom 0.3 or cpufeatures 0.3)
+solana-program = { git = "https://github.com/solana-labs/solana.git", branch = "v1.17" }
+solana-zk-token-sdk = { git = "https://github.com/solana-labs/solana.git", branch = "v1.17" }
+# Pin other culprits that tend to update too fast for SBF
+blake3 = { git = "https://github.com/BLAKE3-team/BLAKE3.git", tag = "1.5.0" }
+getrandom = { git = "https://github.com/rust-random/getrandom.git", tag = "v0.2.12" }
+
